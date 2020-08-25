@@ -1,23 +1,36 @@
 from .progressive_learner import ProgressiveLearner
-from .transformers import TreeClassificationTransformer
-from .voters import TreeClassificationVoter
+from .transformers import TreeClassificationTransformer, TreeRegressionTransformer
+from .voters import TreeClassificationVoter, TreeRegressionVoter
 from .deciders import SimpleAverage
 
 from sklearn.utils import check_X_y, check_array
 
 class LifelongForest():
     
-    def __init__(self, n_estimators=100, finite_sample_correction=False):
+    def __init__(self, n_estimators=100, finite_sample_correction=False, classification_or_regression='classification'):
         self.n_estimators = n_estimators
-        self.pl = ProgressiveLearner(default_transformer_class=
-                                     TreeClassificationTransformer, 
-                                     default_transformer_kwargs={},
-                                     default_voter_class=TreeClassificationVoter,
-                                     default_voter_kwargs=
-                                     {'finite_sample_correction' : 
-                                      finite_sample_correction}, 
-                                     default_decider_class=SimpleAverage,
-                                     default_decider_kwargs={})
+
+        if classification_or_regression == 'classification':
+            self.pl = ProgressiveLearner(default_transformer_class=
+                                         TreeClassificationTransformer, 
+                                         default_transformer_kwargs={},
+                                         default_voter_class=TreeClassificationVoter,
+                                         default_voter_kwargs=
+                                         {'finite_sample_correction' : 
+                                          finite_sample_correction}, 
+                                         default_decider_class=SimpleAverage,
+                                         default_decider_kwargs={'classification_or_regression': 'classification'})
+        elif classification_or_regression == 'regression':
+            self.pl = ProgressiveLearner(default_transformer_class=
+                                         TreeRegressionTransformer, 
+                                         default_transformer_kwargs={},
+                                         default_voter_class=TreeRegressionVoter,
+                                         default_voter_kwargs={}, 
+                                         default_decider_class=SimpleAverage,
+                                         default_decider_kwargs={'classification_or_regression': 'regression'})
+        else:
+            raise ValueError('only classification and regression supported, but classification_or_regression is %s'%(classification_or_regression))
+
         
     def add_task(self, X, y, task_id=None):
         self.pl.add_task(X, 

@@ -1,6 +1,6 @@
 import numpy as np
 
-from base import BaseDecider
+from .base import BaseDecider
 
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.linear_model import Ridge
@@ -19,8 +19,9 @@ class SimpleAverage(BaseDecider):
     Doc string here.
     """
 
-    def __init__(self, classes=[]):
+    def __init__(self, classes=[], classification_or_regression='classification_or_regression'):
         self.classes = classes
+        self.classification_or_regression = classification_or_regression
 
     def fit(
         self,
@@ -30,7 +31,13 @@ class SimpleAverage(BaseDecider):
         transformer_id_to_voters,
         classes=None,
     ):
-        self.classes = self.classes if len(self.classes) > 0 else np.unique(y)
+        if self.classification_or_regression == 'classification':
+            self.classes = self.classes if len(self.classes) > 0 else np.unique(y)
+        elif self.classification_or_regression == 'regression':
+            pass
+        else:
+            raise ValueError('only classification and regression supported, but classification_or_regression is %s'%(classification_or_regression))
+
         self.transformer_id_to_transformers = transformer_id_to_transformers
         self.transformer_id_to_voters = transformer_id_to_voters
 
@@ -58,10 +65,15 @@ class SimpleAverage(BaseDecider):
             vote_per_transformer_id.append(np.mean(vote_per_bag_id, axis=0))
         vote_overall = np.mean(vote_per_transformer_id, axis=0)
 
-        if self.multilabel:
-            return np.array(vote_overall > 0.5).astype(int)
+        if self.classification_or_regression == 'classification':
+            if self.multilabel:
+                return np.array(vote_overall > 0.5).astype(int)
+            else:
+                return self.classes[np.argmax(vote_overall, axis=1)]
         else:
-            return self.classes[np.argmax(vote_overall, axis=1)]
+            return vote_overall
+
+        
 
 
 class KNNRegressionDecider(BaseDecider):
